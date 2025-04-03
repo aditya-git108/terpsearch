@@ -1,0 +1,38 @@
+{% extends "base.html" %} {% block title %}Sign Up{% endblock %} {% block
+content %}
+<form method="POST">
+  <h3 align="center">Link Bluesky Account</h3>
+  <div class="form-group">
+    <label for="bsky_email">Bluesky Email ID</label>
+    <input
+      type="email"
+      class="form-control"
+      id="bsky_email"
+      name="bsky_email"
+      placeholder="Enter email"
+    />
+  </div>
+  <div class="form-group">
+    <label for="bsky_password1">Password</label>
+    <input
+      type="password"
+      class="form-control"
+      id="bsky_password1"
+      name="bsky_password1"
+      placeholder="Enter password"
+    />
+  </div>
+  <div class="form-group">
+    <label for="bsky_password2">Password (Confirm)</label>
+    <input
+      type="password"
+      class="form-control"
+      id="bsky_password2"
+      name="bsky_password2"
+      placeholder="Confirm password"
+    />
+  </div>
+  <br />
+  <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+{% endblock %}

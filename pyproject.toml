@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools >= 76.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "msml_terpsearch"
+requires-python = ">= 3.8"
+version = "1.0.0"
+description = "MSML605 Final Project"
+authors = [{ name = "Aditya Sabu", email = "aditya.sabu@gmail.com" }]
+license = { text = "MIT" }
+readme = "README.md"
+dependencies = [
+    "flask>=3.1.0",
+    "Flask-SQLAlchemy>=3.1.1",
+    "flask-login>=0.6.3",
+    "requests>=2.31.0",
+    "atproto>=0.0.59",
+    "boto3>=1.37.13",
+    "uuid>=1.30",
+    "cryptography>=44.0.2"
+]

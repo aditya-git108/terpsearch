@@ -1,0 +1,15 @@
+{% extends "base.html" %} {% block title %}Home{% endblock %} {% block content
+%}
+<form method="POST" class="mt-4">
+    <h2>Welcome to Terpsearch</h2>
+    <div class="form-group">
+        <label for="blueskyUsername">Bluesky Username:</label>
+        <input type="text" name="blueskyUsername" id="blueskyUsername" class="form-control" placeholder="username.bsky.social" required>
+    </div>
+    <div class="form-group">
+        <label for="blueskyPassword">App Password:</label>
+        <input type="password" name="blueskyPassword" id="blueskyPassword" class="form-control" placeholder="App Password" required>
+    </div>
+    <button type="submit" class="btn btn-success mt-2">Fetch Posts</button>
+</form>
+{% endblock %}

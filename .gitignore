@@ -1,0 +1,29 @@
+# Ignore Python bytecode
+__pycache__/
+*.pyc
+
+# Ignore environment files
+.env
+
+# Ignore virtual environments
+venv/
+env/
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore logs
+*.log
+
+# Ignore database or compiled files
+*.sqlite3
+*.db
+*.so
+
+# Ignore build files
+build/
+data/
+dist/
+instance/
+msml_terpsearch.egg-info/
