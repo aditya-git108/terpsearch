@@ -12,7 +12,7 @@ from atproto.exceptions import BadRequestError
 
 views = Blueprint('views', __name__)
 
-bsky_dynamodb = TerpSearchDb(flask_mode=DynamoDbConstants.FLASK_MODE)
+bsky_dynamodb = TerpSearchDb()
 
 @views.route('/', methods=['GET', 'POST'])
 @login_required
