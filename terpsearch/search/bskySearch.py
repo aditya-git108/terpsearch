@@ -111,7 +111,7 @@ class TerpSearch:
             bsky_username (str): The Bluesky username.
 
         Returns:
-            str or None: The last checked cursor, or None if not available.
+            str: The last checked cursor, or '' if not available.
         """
         stored_user_cursor_last_checked = self.__check_for_existing_cursor(bsky_username=bsky_username)
 
@@ -121,7 +121,7 @@ class TerpSearch:
             )
             return response['Items'][0][TerpSearch.CURSOR_LAST_CHECKED]
         else:
-            return None
+            return ''
 
     def get_timeline_posts(self, bsky_username:str, max_posts=5000):
         """
