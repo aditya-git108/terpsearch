@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+.env
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Docker
+*.log
+*.pid
+*.tar
+*.db
+*.sqlite
+Dockerfile~
+.env.docker
+
+# VSCode/IDE
+.vscode/
+.idea/
+
+# System
+.DS_Store
+Thumbs.db
+
+# HuggingFace cache/model downloads
+.cache/
+sentence_transformers/
