@@ -1,31 +1,28 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from typing import List, Dict, Any
-from .analyzer import group_posts_by_period, summarize_trends
-from fastapi.middleware.cors import CORSMiddleware
-
+from typing import List
+from app.categorizer import categorize_post
 
 app = FastAPI()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
-
+# Define expected structure of incoming data
 class Post(BaseModel):
     text: str
     timestamp: str
 
 class PostRequest(BaseModel):
     posts: List[Post]
-    period: str = 'W'
 
 @app.post("/analyze_trends/")
-async def analyze_trends(data: PostRequest):
-    posts = [post.dict() for post in data.posts]
-    period_counts = group_posts_by_period(posts, data.period)
-    result = summarize_trends(period_counts)
-    return result
+def analyze_trends(data: PostRequest):
+    enriched_posts = []
+    for post in data.posts:
+        category, confidence = categorize_post(post.text)
+        enriched_posts.append({
+            "text": post.text,
+            "timestamp": post.timestamp,
+            "category": category[0],
+            "confidence": confidence
+        })
+
+    return enriched_posts

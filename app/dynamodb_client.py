@@ -10,7 +10,7 @@ def fetch_posts_for_last_n_weeks(weeks=4):
     now = datetime.utcnow()
     start_time = now - timedelta(weeks=weeks)
 
-    # Scan posts by timestamp (assumes 'timestamp' is stored in ISO8601 format)
+    # s 'timestamp' is stored in ISO8601 format
     response = table.scan()  
     items = response['Items']
 

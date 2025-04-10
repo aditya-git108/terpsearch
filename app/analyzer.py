@@ -1,17 +1,25 @@
 import pandas as pd
 from collections import defaultdict
 from .categorizer import categorize_post
+from .confidenceScore_logger import log_confidence_summary
 
 def group_posts_by_period(posts, period='W'):
     df = pd.DataFrame(posts)
     df['timestamp'] = pd.to_datetime(df['timestamp'])
     df['period'] = df['timestamp'].dt.to_period(period).apply(lambda p: p.start_time.strftime('%Y-%m-%d'))
-    df['categories'] = df['text'].apply(categorize_post)
 
+    # Categorize once, extract category and confidence
+    df[['category', 'confidence']] = df['text'].apply(
+        lambda text: pd.Series(categorize_post(text))
+    )
+    log_confidence_summary(df)
+
+    # Count per category per period
     period_counts = defaultdict(lambda: defaultdict(int))
     for _, row in df.iterrows():
-        for cat in row['categories']:
-            period_counts[str(row['period'])][cat] += 1
+        period = str(row['period'])
+        category = row['category'][0] if isinstance(row['category'], list) else row['category']
+        period_counts[period][category] += 1
     return period_counts
 
 def summarize_trends(period_counts):

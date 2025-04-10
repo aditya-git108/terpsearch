@@ -1,29 +1,32 @@
 from sentence_transformers import SentenceTransformer, util
+import torch
+import re
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
+# Load model
+model = SentenceTransformer("all-MiniLM-L6-v2")
 
-# labels 
-CATEGORY_LABELS = [
-    "sports and athletics, football, basketball, soccer",
-    "politics and government, elections, public policy",
-    "technology, AI, software, startups",
-    "entertainment, movies, music, celebrities",
-    "finance, investing, stock market, crypto",
-    "health, medicine, hospitals, wellness",
-    "education, learning, universities, schools",
-    "climate change, environment, global warming",
-    "travel, tourism, destinations, vacations",
-    "memes, internet culture, funny content",
-    "fashion, clothing, trends, style"
-]
+# Category definitions
+CATEGORY_LABELS = {
+    "sports": "Sports and athletic events including football, basketball, soccer",
+    "politics": "Politics, elections, public policy, government decisions",
+    "tech": "Technology, artificial intelligence, startups, software, gadgets",
+    "entertainment": "Movies, music, celebrities, pop culture, drama",
+    "finance": "Stock market, cryptocurrency, investing, business, economy",
+    "health": "Medicine, hospitals, mental health, wellness, medical care",
+    "education": "Schools, universities, students, learning, academic life",
+    "climate": "Climate change, environment, emissions, global warming",
+    "travel": "Vacations, destinations, tourism, cities, flights, trips",
+    "memes": "Internet culture, jokes, funny posts, reactions, humor",
+    "fashion": "Clothing, outfits, style, fashion trends, appearance"
+}
 
-CLEAN_LABELS = [label.split(",")[0] for label in CATEGORY_LABELS]
+CATEGORY_NAMES = list(CATEGORY_LABELS.keys())
+CATEGORY_EMBEDDINGS = model.encode(list(CATEGORY_LABELS.values()), convert_to_tensor=True)
 
-# Basic keyword dictionary for fallback
 KEYWORDS = {
     "sports": ["football", "nba", "goal", "match", "score", "soccer", "basketball"],
     "politics": ["election", "president", "government", "policy", "senate", "reform"],
-    "tech": ["AI", "technology", "startup", "software", "gadget", "robot"],
+    "tech": ["ai", "technology", "startup", "software", "gadget", "robot"],
     "entertainment": ["movie", "music", "celebrity", "tv", "drama", "album"],
     "finance": ["stock", "market", "crypto", "bitcoin", "investing", "funding"],
     "health": ["doctor", "medicine", "hospital", "vaccine", "health", "mental"],
@@ -34,28 +37,55 @@ KEYWORDS = {
     "fashion": ["fashion", "clothes", "style", "outfit", "trendy"]
 }
 
-CATEGORY_EMBEDDINGS = model.encode(CATEGORY_LABELS, convert_to_tensor=True)
+# Logging
+CATEGORIZATION_LOG = {
+    "semantic_match": 0,
+    "keyword_fallback": 0,
+    "uncategorized": 0
+}
 
-def categorize_post(text, threshold=0.22):
+def chunk_text(text, max_length=300):
+    sentences = re.split(r'[.!?\n]', text)
+    chunks, current = [], ""
+    for sentence in sentences:
+        if len(current) + len(sentence) < max_length:
+            current += " " + sentence.strip()
+        else:
+            chunks.append(current.strip())
+            current = sentence.strip()
+    if current:
+        chunks.append(current.strip())
+    return [c for c in chunks if c]
+
+def categorize_post(text, threshold=0.07):
     text_lower = text.lower()
-    post_embedding = model.encode(text, convert_to_tensor=True)
+
+    chunks = chunk_text(text)
+    chunk_embeddings = [model.encode(chunk, convert_to_tensor=True) for chunk in chunks]
+    post_embedding = torch.stack(chunk_embeddings).mean(dim=0)
     cosine_scores = util.cos_sim(post_embedding, CATEGORY_EMBEDDINGS)[0]
 
-    # semantic similarity 
-    matched = [
-        CLEAN_LABELS[i]
-        for i in range(len(CATEGORY_LABELS))
-        if cosine_scores[i] > threshold
-    ]
+    for i, cat in enumerate(CATEGORY_NAMES):
+        if any(k in text_lower for k in KEYWORDS[cat]):
+            cosine_scores[i] += 0.05
 
-    # Fallback to keyword match if NLP fails
-    if not matched:
-        for cat, keywords in KEYWORDS.items():
-            if any(keyword.lower() in text_lower for keyword in keywords):
-                matched.append(cat)
-                break
+    best_idx = torch.argmax(cosine_scores).item()
+    best_score = cosine_scores[best_idx].item()
 
-    if not matched:
-        matched.append("uncategorized")
+    print(f"\n📝 POST: {text[:80]}...")
+    for i, label in enumerate(CATEGORY_NAMES):
+        print(f"  {label:<15}: {cosine_scores[i].item():.3f}")
+    print(f"✅ Best match: {CATEGORY_NAMES[best_idx]} (confidence: {best_score:.3f})")
+    print("-" * 40)
 
-    return matched
+    if best_score > threshold:
+        CATEGORIZATION_LOG["semantic_match"] += 1
+        return [CATEGORY_NAMES[best_idx]], round(best_score, 3)
+
+    for cat, keywords in KEYWORDS.items():
+        if any(keyword in text_lower for keyword in keywords):
+            CATEGORIZATION_LOG["keyword_fallback"] += 1
+            return [cat], 0.0
+
+    CATEGORIZATION_LOG["uncategorized"] += 1
+    return ["uncategorized"], 0.0
