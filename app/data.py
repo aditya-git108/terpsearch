@@ -47,7 +47,7 @@ Getting the posts directly from BlueSky API Server
 #     Fetches posts from the Bluesky API and returns cleaned records
 #     in the same format as the CSV: [{"text": str, "timestamp": ISO str}]
 #     """
-#     # Placeholder URL — replace with actual Bluesky API endpoint and params
+#     # Placeholder URL — replace with actual Bluesky API 
 #     API_URL = "https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed"
 #     params = {
 #         "actor": "your-bluesky-handle.bsky.social",
