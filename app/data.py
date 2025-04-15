@@ -36,3 +36,39 @@ def get_real_posts():
 
     # Convert DataFrame to a list of dictionaries for use in the backend
     return df.to_dict(orient="records")
+
+
+"""
+Getting the posts directly from BlueSky API Server  
+"""
+
+# def get_real_posts():
+#     """
+#     Fetches posts from the Bluesky API and returns cleaned records
+#     in the same format as the CSV: [{"text": str, "timestamp": ISO str}]
+#     """
+#     # Placeholder URL — replace with actual Bluesky API endpoint and params
+#     API_URL = "https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed"
+#     params = {
+#         "actor": "your-bluesky-handle.bsky.social",
+#         "limit": 20
+#     }
+
+#     response = requests.get(API_URL, params=params)
+#     response.raise_for_status()
+#     data = response.json()
+
+#     # Transform response into the desired format
+#     posts = []
+#     for item in data.get("feed", []):
+#         record = item.get("post", {})
+#         text = record.get("text", "").strip()
+#         timestamp = record.get("createdAt")
+
+#         if text and timestamp:
+#             posts.append({
+#                 "text": text,
+#                 "timestamp": datetime.fromisoformat(timestamp.rstrip("Z")).strftime("%Y-%m-%dT%H:%M:%S")
+#             })
+
+#     return posts
