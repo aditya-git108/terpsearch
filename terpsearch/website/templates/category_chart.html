@@ -1,0 +1,79 @@
+{% extends "base.html" %} {% block title %}Graphical Trends{% endblock %} {% block content
+%}
+<div class="container mt-4">
+  <h3>Category Distribution</h3>
+  <p class="text-muted">
+    Showing posts from <strong>{{ start_date }}</strong> to <strong>{{ end_date }}</strong>
+  </p>
+
+  {% if chart_labels and chart_values %}
+    <canvas id="categoryChart" width="600" height="300"></canvas>
+  {% else %}
+    <p>No category data available.</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const ctx = document.getElementById('categoryChart').getContext('2d');
+    const categoryChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: {{ chart_labels | tojson }},
+        datasets: [{
+          label: 'Number of Posts',
+          data: {{ chart_values | tojson }},
+          backgroundColor: {{ chart_colors | tojson }},
+          borderColor: {{ chart_colors | tojson }},
+          borderWidth: 1
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const value = context.parsed.x;
+                const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                const percent = ((value / total) * 100).toFixed(1);
+                return `${value} posts`;
+              }
+            }
+          },
+          datalabels: {
+            anchor: 'center',
+            align: 'center',
+            color: '#000',
+            font: {
+              weight: 'bold',
+              size: 9
+            },
+            formatter: function(value, context) {
+              const data = context.chart.data.datasets[0].data;
+              const total = data.reduce((a, b) => a + b, 0);
+              const percent = ((value / total) * 100).toFixed(1);
+              return `${percent}%`;
+            }
+          }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            ticks: {
+              precision: 0
+            }
+          }
+        }
+      },
+      plugins: [ChartDataLabels]
+    });
+  });
+</script>
+{% endblock %}
