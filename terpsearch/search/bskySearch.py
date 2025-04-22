@@ -1,5 +1,6 @@
 import atproto
 from atproto import Client
+from dateutil.parser import isoparse
 from terpsearch.dynamodb.dynamodb_helpers import *
 from terpsearch.dynamodb.BskySessionEncryptor import BskySessionEncryptor
 from atproto.exceptions import AtProtocolError
@@ -22,7 +23,7 @@ class TerpSearch:
     SESSION_TOKEN = 'session_token'
     CURSOR_LAST_CHECKED = 'cursor_last_checked'
 
-    def __init__(self, bsky_client: atproto.Client, username: str, password: str):
+    def __init__(self, bsky_client: atproto.Client, username: str, password: str, db_mode: str):
         """
         Initializes a TerpSearch instance with DynamoDB integration and Bluesky authentication.
 
@@ -31,14 +32,17 @@ class TerpSearch:
             - username (str): The Bluesky username.
             - password (str): The Bluesky password (ideally an app password).
         """
+        self.db_mode = db_mode
         self.bsky_username = username
         self.bsky_password = password
         self.posts_table = get_dynamodb_table(
-            dynamodb_resource=get_dynamodb_resource(mode=DynamoDbConstants.FLASK_MODE),
-            table_name=DynamoDbConstants.BSKY_POSTS_TABLE_NAME)
+            dynamodb_resource=get_dynamodb_resource(db_mode=self.db_mode),
+            table_name=DynamoDbConstants.BSKY_POSTS_TABLE_NAME
+        )
         self.bsky_users_table = get_dynamodb_table(
-            dynamodb_resource=get_dynamodb_resource(mode=DynamoDbConstants.FLASK_MODE),
-            table_name=DynamoDbConstants.BSKY_USERS_TABLE_NAME)
+            dynamodb_resource=get_dynamodb_resource(db_mode=self.db_mode),
+            table_name=DynamoDbConstants.BSKY_USERS_TABLE_NAME
+        )
         self.bsky_client = self.__get_bsky_client(bsky_client, username=self.bsky_username, password=self.bsky_password)
 
     def __get_existing_user_session(self, bsky_username):
@@ -60,7 +64,7 @@ class TerpSearch:
         session_token = response['Items'][0][TerpSearch.SESSION_TOKEN]
         return session_token
 
-    def __get_bsky_client(self, client: atproto.Client, username:str, password:str):
+    def __get_bsky_client(self, client: atproto.Client, username: str, password: str):
         """
         Attempts to restore a Bluesky session using a stored encrypted token.
 
@@ -80,6 +84,17 @@ class TerpSearch:
             session_token = self.__get_existing_user_session(bsky_username=username)
             client._import_session_string(encryptor.decrypt(session_token))
             print(f'{username} has an active bluesky session')
+            return client
+        except AtProtocolError as e:
+            print('Removing expired session token...')
+            self.bsky_users_table.update_item(
+                Key={
+                    'bskyUsername': username  # your partition key
+                },
+                UpdateExpression="REMOVE session_token"
+            )
+            client = create_session(client=client, bsky_username=username,
+                                    bsky_password=password, table=self.bsky_users_table)
             return client
         except:
             print(f'An active session does not currently exist for {username}')
@@ -123,42 +138,40 @@ class TerpSearch:
         else:
             return ''
 
-    def get_timeline_posts(self, bsky_username:str, max_posts=5000):
-        """
-        Fetches as many posts as possible from a user's Bluesky timeline using pagination.
-
-        The method starts from the last saved cursor (if any), walks through the timeline
-        using the reverse-chronological algorithm, and stores details like text, author, action,
-        and timestamps. It updates the cursor in the BSKY_USERS table at the end of the fetch.
-
-        Args:
-            bsky_username (str): The username for whom to fetch posts.
-            max_posts (int): The maximum number of posts to fetch. (Currently unused in the loop.)
-
-        Returns:
-            dict: A response object containing:
-                - 'posts': a list of structured post data dictionaries.
-                - 'cursor_last_checked': the timestamp used as the new cursor.
-
-        Example:
-            terp = TerpSearch(client, username="user", password="pass")
-            terp.get_timeline_posts("user.bsky.social")
-        """
+    def get_timeline_posts(self, bsky_username: str, max_posts=5000):
         all_posts = []
-        cursor = datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
-        cursor_last_checked = self.__get_user_cursor(bsky_username=bsky_username)
+        cursor = None
+        cursor_last_checked = self.__get_user_cursor(bsky_username=bsky_username)  # stored timestamp
         posts_fetched = 0
         first_post_time = None
         last_post_time = None
+
+        # Flag to control loop
         timeline_exists = True
 
-        cursor_num = 0
-        while cursor > cursor_last_checked:
+        while timeline_exists:
+            # print(f'Cursor: {cursor}')
+            # print(f'Last checked: {cursor_last_checked}')
+
             try:
-                if cursor_num == 0:
-                    timeline = self.bsky_client.get_timeline(algorithm='reverse-chronological', cursor=None)
-                else:
-                    timeline = self.bsky_client.get_timeline(algorithm='reverse-chronological', cursor=cursor)
+                timeline = None
+                try:
+                    timeline = self.bsky_client.get_timeline(
+                        algorithm='reverse-chronological',
+                        cursor=cursor
+                    )
+                except Exception as e:
+                    if 'ExpiredToken' in str(e) or 'InvalidToken' in str(e):
+                        print("⚠️ Token expired. Re-authenticating...")
+                        new_bsky_client = Client()
+                        update_expired_client(bsky_client=new_bsky_client, table=self.bsky_users_table,
+                                              bsky_username=self.bsky_username, bsky_password=self.bsky_password)
+                        print('>>> Updated expired session token')
+                        self.bsky_client = new_bsky_client
+                    timeline = self.bsky_client.get_timeline(
+                        algorithm='reverse-chronological',
+                        cursor=cursor
+                    )
 
                 if not timeline.feed:
                     break
@@ -172,11 +185,19 @@ class TerpSearch:
                         action_by = feed_view.reason.by.handle
                         action = f"Reposted by @{action_by}"
 
-                    # Store post timestamps
-                    post_time = post.created_at if hasattr(post, 'created_at') else "Unknown"
+                    post_time = post.created_at if hasattr(post, 'created_at') else None
+                    if post_time is None:
+                        continue
+
+                    # Stop fetching when we've hit already-seen posts
+                    if cursor_last_checked and isoparse(post_time) <= isoparse(cursor_last_checked):
+                        timeline_exists = False
+                        break
+
+                    # Track range of post times
                     if first_post_time is None:
-                        first_post_time = post_time  # First (newest) post
-                    last_post_time = post_time  # Last (oldest) post
+                        first_post_time = post_time
+                    last_post_time = post_time
 
                     all_posts.append({
                         "author": author.display_name,
@@ -187,23 +208,23 @@ class TerpSearch:
                     })
                     posts_fetched += 1
 
-                if cursor_num == 1:
-                    cursor_last_checked = cursor
-
+                # Set the next cursor
                 cursor = getattr(timeline, "cursor", None)
                 if not cursor:
-                    timeline_exists = False
                     break
-
-                cursor_num = cursor_num + 1
 
             except Exception as e:
                 print(f"Error fetching posts: {e}")
                 break
 
-        print(f"✅ Fetched {posts_fetched} posts from {first_post_time} to {last_post_time}")
-        print(f'cursor_last_checked: {cursor_last_checked}')
+        # Use timestamp of the newest post as new cursor_last_checked
+        if all_posts:
+            cursor_last_checked = all_posts[0]['timestamp']
 
+        print(f"✅ Fetched {posts_fetched} posts from {first_post_time} to {last_post_time}")
+        print(f'Updated cursor_last_checked: {cursor_last_checked}')
+
+        # Store cursor in users table
         response = {'posts': all_posts, TerpSearch.CURSOR_LAST_CHECKED: cursor_last_checked}
         self.bsky_users_table.update_item(
             Key={'bskyUsername': bsky_username},
@@ -212,7 +233,6 @@ class TerpSearch:
                 ':cursor': cursor_last_checked
             }
         )
-
         return response
 
     def get_discover_feed_posts(self):
