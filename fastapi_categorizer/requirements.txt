@@ -1,0 +1,15 @@
+setuptools
+flask
+Flask-SQLAlchemy
+flask-login
+requests
+atproto
+boto3
+cryptography
+sentence_transformers
+fastapi
+uvicorn
+hypercorn
+gunicorn
+celery
+redis
