@@ -1,5 +1,6 @@
 from terpsearch.dynamodb.dynamodb_helpers import *
 from terpsearch.constants.DynamoDbConstants import DynamoDbConstants
+import botocore.exceptions
 
 
 class BskyUsersTable:
@@ -17,44 +18,55 @@ class BskyUsersTable:
         indicating when the user's Bluesky feed was last synced.
     """
 
-    def __init__(self):
+    def __init__(self, db_mode: str):
         """
         Initializes a BskyUsersTable instance by making the DynamoDB resource and client objects readily available
         """
-        self.dynamodb_resource = get_dynamodb_resource(mode=DynamoDbConstants.FLASK_MODE)
-        self.dynamodb_client = get_dynamodb_client(mode=DynamoDbConstants.FLASK_MODE)
+        self.dynamodb_resource = get_dynamodb_resource(db_mode=db_mode)
+        self.dynamodb_client = get_dynamodb_client(db_mode=db_mode)
 
-    def create_table(self, dynamodb_resource):
+    def create_table(self):
         """
         Creates the Bluesky users DynamoDB table with the following schema:
         - Partition Key: bskyUsername (String)
 
         This table is used to store user session metadata keyed by their Bluesky username.
 
-        Args:
-            dynamodb_resource (boto3.resource): A Boto3 DynamoDB resource used to create the dynamodb table.
-
         Returns:
             None
         """
-        table = dynamodb_resource.create_table(
-            TableName=DynamoDbConstants.BSKY_USERS_TABLE_NAME,
-            KeySchema=[
-                {
-                    'AttributeName': 'bskyUsername',
-                    'KeyType': 'HASH'  # Partition key
-                }
-            ],
-            AttributeDefinitions=[
-                {
-                    'AttributeName': 'bskyUsername',
-                    'AttributeType': 'S'
-                }
-            ],
-            ProvisionedThroughput={
-                'ReadCapacityUnits': 1,
-                'WriteCapacityUnits': 1
-            }
-        )
-        table.wait_until_exists()
-        print(f"{DynamoDbConstants.BSKY_USERS_TABLE_NAME} table created successfully.")
+        print(f'Creating {DynamoDbConstants.BSKY_USERS_TABLE_NAME}...')
+        try:
+            users_table_exists = table_exists(client=self.dynamodb_client,
+                                              table_name=DynamoDbConstants.BSKY_USERS_TABLE_NAME)
+            if users_table_exists is True:
+                print(f'✅{DynamoDbConstants.BSKY_USERS_TABLE_NAME} table already exists')
+                return
+            else:
+                table = self.dynamodb_resource.create_table(
+                    TableName=DynamoDbConstants.BSKY_USERS_TABLE_NAME,
+                    KeySchema=[
+                        {
+                            'AttributeName': 'bskyUsername',
+                            'KeyType': 'HASH'  # Partition key
+                        }
+                    ],
+                    AttributeDefinitions=[
+                        {
+                            'AttributeName': 'bskyUsername',
+                            'AttributeType': 'S'
+                        }
+                    ],
+                    BillingMode='PROVISIONED',
+                    ProvisionedThroughput={
+                        'ReadCapacityUnits': 1,
+                        'WriteCapacityUnits': 1
+                    }
+                )
+                table.wait_until_exists()
+                print(f"{DynamoDbConstants.BSKY_USERS_TABLE_NAME} table created successfully.")
+        except botocore.exceptions.ClientError as e:
+            if e.response['Error']['Code'] == 'ResourceInUseException':
+                print(f"⚠️ {DynamoDbConstants.BSKY_USERS_TABLE_NAME} is being created by another process. Skipping.")
+            else:
+                print(f'🚨DynamoDB error when trying to create {DynamoDbConstants.BSKY_USERS_TABLE_NAME} table: {e}')

@@ -1,55 +1,65 @@
 import atproto
 import boto3
 import uuid
+import os
 from terpsearch.constants.DynamoDbConstants import DynamoDbConstants
 from terpsearch.dynamodb.BskySessionEncryptor import BskySessionEncryptor
 from atproto.exceptions import AtProtocolError
+from atproto.exceptions import TokenExpiredSignatureError
 
 
-def get_dynamodb_resource(mode: str):
+def get_dynamodb_resource(db_mode: str):
     """
     Returns a boto3 DynamoDB resource configured for the given environment.
 
     Args:
-        mode (str): Deployment mode. Use 'PROD' for production; otherwise, development settings are used.
+        db_mode (str): Deployment mode. Use 'PROD' for production; otherwise, development settings are used.
 
     Returns:
         boto3.resources.factory.dynamodb.ServiceResource: A DynamoDB resource object.
     """
-    endpoint = (DynamoDbConstants.DYNAMODB_URL
-                if mode.upper() == 'PROD'
-                else DynamoDbConstants.DYNAMODB_DEV_URL)
+    if db_mode.upper() == 'PROD':
+        return boto3.resource(
+            'dynamodb',
+            region_name=DynamoDbConstants.DYNAMODB_REGION,
+            aws_access_key_id=DynamoDbConstants.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=DynamoDbConstants.AWS_SECRET_ACCESS_KEY_ID
+        )
+    elif db_mode.upper() == 'DEV':
+        return boto3.resource(
+            'dynamodb',
+            region_name=DynamoDbConstants.DYNAMODB_REGION,
+            aws_access_key_id='dummy',
+            aws_secret_access_key='dummy',
+            endpoint_url=DynamoDbConstants.DYNAMODB_URL
+        )
 
-    return boto3.resource(
-        'dynamodb',
-        region_name='ap-southeast-1',
-        aws_access_key_id='dummy',
-        aws_secret_access_key='dummy',
-        endpoint_url=endpoint
-    )
 
-
-def get_dynamodb_client(mode: str):
+def get_dynamodb_client(db_mode: str):
     """
     Returns a low-level boto3 DynamoDB client configured for the given environment.
 
     Args:
-        mode (str): Deployment mode. Use 'PROD' for production; otherwise, development settings are used.
+        db_mode (str): Deployment mode. Use 'PROD' for production; otherwise, development settings are used.
 
     Returns:
         botocore.client.DynamoDB: A DynamoDB client object.
     """
-    endpoint = (DynamoDbConstants.DYNAMODB_URL
-                if mode.upper() == 'PROD'
-                else DynamoDbConstants.DYNAMODB_DEV_URL)
-
-    return boto3.client(
-        'dynamodb',
-        region_name='ap-southeast-1',
-        aws_access_key_id='dummy',
-        aws_secret_access_key='dummy',
-        endpoint_url=endpoint
-    )
+    if db_mode.upper() == 'PROD':
+        return boto3.client(
+            'dynamodb',
+            region_name=DynamoDbConstants.DYNAMODB_REGION,
+            aws_access_key_id=DynamoDbConstants.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=DynamoDbConstants.AWS_SECRET_ACCESS_KEY_ID
+        )
+    elif db_mode.upper() == 'DEV':
+        return boto3.client(
+            'dynamodb',
+            region_name=DynamoDbConstants.DYNAMODB_REGION,
+            aws_access_key_id='dummy',
+            aws_secret_access_key='dummy',
+            endpoint_url=DynamoDbConstants.DYNAMODB_URL
+        )
 
 
 def get_dynamodb_table(dynamodb_resource: boto3.resource, table_name: str):
@@ -104,6 +114,20 @@ def get_user_cursor(table, username):
     return
 
 
+def update_expired_client(bsky_client, table, bsky_username, bsky_password):
+    encryptor = BskySessionEncryptor()
+    bsky_client.login(bsky_username, bsky_password)
+    new_session_token = bsky_client.export_session_string()
+    table.update_item(
+        Key={'bskyUsername': bsky_username},
+        UpdateExpression='SET session_token = :token',
+        ExpressionAttributeValues={
+            ':token': encryptor.encrypt(new_session_token)
+        }
+    )
+    return bsky_client
+
+
 def create_session(client: atproto.Client, bsky_username: str, bsky_password: str, table):
     """
     Authenticates a new Bluesky client session and stores the encrypted session token in DynamoDB.
@@ -120,11 +144,14 @@ def create_session(client: atproto.Client, bsky_username: str, bsky_password: st
     Returns:
         atproto.Client or None: The authenticated client if successful; None otherwise.
     """
+    encryptor = ''
     try:
         print(f'Creating new session for {bsky_username}')
         encryptor = BskySessionEncryptor()
         client.login(bsky_username, bsky_password)
         print('Authenticated bluesky API client...')
+        print(f'Added an active session token for {bsky_username}')
+        print("Logged in successfully!")
         session_token = client.export_session_string()
         table.update_item(
             Key={'bskyUsername': bsky_username},
@@ -133,12 +160,12 @@ def create_session(client: atproto.Client, bsky_username: str, bsky_password: st
                 ':token': encryptor.encrypt(session_token)
             }
         )
-        print(f'Added an active session token for {bsky_username}')
-        print("Logged in successfully!")
         return client
+    except AtProtocolError as e:
+        print("*** The existing token has expired! ***")
+        raise
+    except TokenExpiredSignatureError:
+        print('The existing token has expired!')
     except AttributeError:
         print('Failed to find BskySessionEncryptor() key when creating a new session')
-        return None
-    except AtProtocolError as e:
-        print("Login failed:", e)
         return None

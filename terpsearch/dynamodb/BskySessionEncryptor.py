@@ -27,7 +27,7 @@ class BskySessionEncryptor:
             return cipher
         except AttributeError as e:
             print('Could not find BskySessionEncrytor() key')
-            return None
+            raise
 
     def encrypt(self, msg):
         """
