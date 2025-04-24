@@ -72,11 +72,7 @@ class BskyPostsTable:
                         #     'AttributeType': 'M'
                         # },
                     ],
-                    BillingMode='PROVISIONED',
-                    ProvisionedThroughput={
-                        'ReadCapacityUnits': 10,
-                        'WriteCapacityUnits': 10
-                    },
+                    BillingMode='PAY_PER_REQUEST',
                     GlobalSecondaryIndexes=[
                         {
                             'IndexName': 'UserTimestampIndex',
@@ -93,10 +89,6 @@ class BskyPostsTable:
                             'Projection': {
                                 'ProjectionType': 'INCLUDE',
                                 'NonKeyAttributes': ['text', 'category']
-                            },
-                            'ProvisionedThroughput': {
-                                'ReadCapacityUnits': 5,
-                                'WriteCapacityUnits': 5
                             }
                         }
                     ]
