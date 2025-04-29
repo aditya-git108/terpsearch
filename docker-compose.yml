@@ -1,4 +1,41 @@
 services:
+  redis:
+    image: redis:6
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  celery:
+    build:
+      context: .
+      dockerfile: fastapi_categorizer/Dockerfile
+    image: celery:latest
+    container_name: celery
+    working_dir: /app
+    command: celery -A fastapi_categorizer.celery_worker.celery_app worker --loglevel=info --concurrency=1
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - PYTHONPATH=/app
+      - DYNAMODB_URL=http://dynamodb-local:8000/
+
+  fastapi:
+    build:
+      context: .
+      dockerfile: fastapi_categorizer/Dockerfile
+    image: fastapi:latest
+    container_name: fastapi
+    ports:
+      - "8010:8010"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - PYTHONPATH=/app
+    depends_on:
+      - redis
+      - celery
+    command: uvicorn fastapi_categorizer.fastapi_app:app --host 0.0.0.0 --port 8010
+
 
   dynamodb-local:
     command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
@@ -23,16 +60,27 @@ services:
       - DYNAMO_ENDPOINT=http://dynamodb-local:8000
       - AWS_REGION=ap-southeast-1
 
-  flask-app:
-    build: .
+  terpsearch:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: terpsearch-app:latest
     ports:
       - "5000:5000"
     volumes:
       - .:/app
+    depends_on:
+      - fastapi
+      - redis
+      - celery
     env_file:
       - .env
     environment:
-      - FLASK_ENV=development
-      - AWS_REGION=ap-southeast-1
-      - AWS_ACCESS_KEY_ID=dummy
-      - AWS_SECRET_ACCESS_KEY=dummy
+      - REDIS_URL=redis://redis:6379/0
+      - FASTAPI_URL=http://fastapi:8010
+      - DYNAMODB_URL=http://dynamodb-local:8000
+      - AWS_REGION=us-east-1
+      - PYTHONUNBUFFERED=1
+#      - AWS_ACCESS_KEY_ID=dummy
+#      - AWS_SECRET_ACCESS_KEY=dummy
+    command: sh -c "make terpsearch-dev"
