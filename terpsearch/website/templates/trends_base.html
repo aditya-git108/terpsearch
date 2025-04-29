@@ -42,9 +42,10 @@
 </style>
 
 <div class="form-container">
-  <form action="/search_trends" method="POST">
+  <form action="/trends" method="POST">
     <label for="bsky_username">Bluesky Username</label>
-    <input type="text" id="bsky_username" name="bsky_username" required>
+    <input type="text" id="bsky_username" name="bsky_username" value="{{ user.bsky_email if user.bsky_email else '' }}"
+           readonly required>
 
     <label for="start_date">Start Date</label>
     <input type="date" id="start_date" name="start_date" required>
