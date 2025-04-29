@@ -36,38 +36,21 @@ def generate_color_palette(n):
     return [random.choice(base_colors) for _ in range(n)]
 
 
-@trends.route('/search_trends', methods=['GET', 'POST'])
-@login_required
-def search_trends():
-    posts_table = get_dynamodb_table(dynamodb_resource=bsky_dynamodb.dynamodb_resource,
-                                     table_name=DynamoDbConstants.BSKY_POSTS_TABLE_NAME)
-    if request.method == 'POST':
-        bsky_username = request.form.get('bsky_username')
-        start_date = request.form.get('start_date')
-        end_date = request.form.get('end_date')
-
-        session['bsky_username'] = bsky_username
-        session['start_date'] = start_date
-        session['end_date'] = end_date
-
-        # Redirect to a clean URL with no visible params
-        return redirect(url_for('trends.timeline_trends'))
-
-
-@trends.route('/trends')
+@trends.route('/trends', methods=['GET', 'POST'])
 @login_required
 def timeline_trends():
     posts_table = get_dynamodb_table(dynamodb_resource=bsky_dynamodb.dynamodb_resource,
                                      table_name=DynamoDbConstants.BSKY_POSTS_TABLE_NAME)
 
     # Pull values from session and clear session so that old values won't be reused when refreshing the page
-    bsky_username = session.pop('bsky_username', None)
-    start_date = session.pop('start_date', None)
-    end_date = session.pop('end_date', None)
+    bsky_username = request.form.get('bsky_username')
+    start_date = request.form.get('start_date')
+    end_date = request.form.get('end_date')
 
     # If user hasn't submitted the form yet
     if not (bsky_username and start_date and end_date):
-        return render_template("trends_base.html", user=current_user)
+        # return render_template("trends_base.html", user=current_user)
+        return render_template("trends_base.html")
 
     # Convert to both dates to full ISO 8601 timestamps (to match DynamoDB timestamp)
     start_iso = f"{start_date}T00:00:00Z"

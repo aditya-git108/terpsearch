@@ -102,7 +102,6 @@ class TerpSearchDb:
             # else:
             #     print("Item already exists. Skipping insertion.")
 
-
     def batch_write_items(self, items: list, table_name: str, user: str):
         """
         Batch writes multiple post items to DynamoDB, skipping any duplicates based on conditional checks.
