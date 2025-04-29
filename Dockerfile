@@ -20,4 +20,4 @@ EXPOSE 5000
 EXPOSE 8000
 EXPOSE 8001
 
-CMD ["make", "terpsearch-prod"]
+#CMD ["make", "terpsearch-prod"]
