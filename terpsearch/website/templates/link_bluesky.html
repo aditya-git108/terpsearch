@@ -1,17 +1,32 @@
 {% extends "base.html" %} {% block title %}Sign Up{% endblock %} {% block
 content %}
 <form method="POST">
-  <h3 align="center">Link Bluesky Account</h3>
+  <h3 align="center">Update Bluesky Email</h3>
+
   <div class="form-group">
-    <label for="bsky_email">Bluesky Email ID</label>
+    <label for="current_bsky_email">Current Bluesky Email</label>
     <input
       type="email"
       class="form-control"
-      id="bsky_email"
-      name="bsky_email"
-      placeholder="Enter email"
+      id="current_bsky_email"
+      name="current_bsky_email"
+      placeholder="Enter current email"
+      required
     />
   </div>
+
+  <div class="form-group">
+    <label for="new_bsky_email">New Bluesky Email</label>
+    <input
+      type="email"
+      class="form-control"
+      id="new_bsky_email"
+      name="new_bsky_email"
+      placeholder="Enter new email"
+      required
+    />
+  </div>
+
   <div class="form-group">
     <label for="bsky_password1">Password</label>
     <input
@@ -20,8 +35,10 @@ content %}
       id="bsky_password1"
       name="bsky_password1"
       placeholder="Enter password"
+      required
     />
   </div>
+
   <div class="form-group">
     <label for="bsky_password2">Password (Confirm)</label>
     <input
@@ -30,8 +47,10 @@ content %}
       id="bsky_password2"
       name="bsky_password2"
       placeholder="Confirm password"
+      required
     />
   </div>
+
   <br />
   <button type="submit" class="btn btn-primary">Submit</button>
 </form>
