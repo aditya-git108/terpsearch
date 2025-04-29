@@ -10,8 +10,9 @@ from sqlalchemy.sql import func
 #     first_name = db.Column(db.String(150))
 
 class User(UserMixin):
-    def __init__(self, user_id, email, first_name, password_hash):
+    def __init__(self, user_id, email, bsky_email, first_name, password_hash):
         self.id = user_id
         self.email = email
+        self.bsky_email = bsky_email
         self.first_name = first_name
         self.password_hash = password_hash
