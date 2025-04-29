@@ -2,7 +2,7 @@ import boto3
 import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
+from flask_login import LoginManager, current_user
 from flask_session import Session
 from terpsearch.dynamodb.TerpSearchDb import TerpSearchDb
 from terpsearch.dynamodb.dynamodb_helpers import (table_exists, DynamoDbConstants, get_dynamodb_resource,
@@ -59,8 +59,8 @@ def create_app():
         response = login_table.get_item(Key={'user_id': user_id})
         item = response.get('Item')
         if item:
-            return User(user_id=item['user_id'], email=item['email'], first_name=item['firstName'],
-                        password_hash=item['password'])
+            return User(user_id=item['user_id'], email=item['email'], bsky_email=item['bsky_email'],
+                        first_name=item['firstName'], password_hash=item['password'])
         return None
 
     posts_table_exists = table_exists(client=bsky_dynamodb.client, table_name=DynamoDbConstants.BSKY_POSTS_TABLE_NAME)
@@ -70,6 +70,11 @@ def create_app():
     users_table_exists = table_exists(client=bsky_dynamodb.client, table_name=DynamoDbConstants.BSKY_USERS_TABLE_NAME)
     if users_table_exists is False:
         bsky_dynamodb.create_users_table()
+
+    @app.context_processor
+    def inject_user():
+        from flask_login import current_user
+        return dict(user=current_user)
 
     return app
 
