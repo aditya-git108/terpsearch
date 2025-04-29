@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List, Dict, AnyStr
-from celery_worker import categorize_texts_task, celery_app
+from fastapi_categorizer.celery_worker import categorize_texts_task, celery_app
 
 app = FastAPI()
 
@@ -21,7 +21,7 @@ def categorize(payload: TextsRequest):
     if not texts:
         return {"task_id": None, "error": "No valid texts provided."}
 
-    task = categorize_texts_task.delay(payload.bsky_posts)
+    task = categorize_texts_task.delay(payload.bsky_posts, payload.bsky_username)
     return {"task_id": task.id}
 
 
