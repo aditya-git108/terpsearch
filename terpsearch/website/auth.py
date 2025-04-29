@@ -32,7 +32,7 @@ def login():
         if items:
             user_data = items[0]
             if check_password_hash(user_data['password'], password):
-                user = User(user_data['user_id'], user_data['email'], user_data['firstName'],
+                user = User(user_data['user_id'], user_data['email'], user_data['bsky_email'], user_data['firstName'],
                             user_data['password'])
                 login_user(user, remember=True)
                 return redirect(url_for('views.home'))
@@ -40,14 +40,14 @@ def login():
                 flash('Incorrect password, try again.', category='error')
         else:
             flash('Email does not exist', category='error')
-    return render_template('login.html', user=current_user)
+    return render_template('login.html')
 
 
 @auth.route('/logout')
 @login_required
 def logout():
     logout_user()
-    session.clear()
+    flash("You’ve been logged out.", "success")
     return redirect(url_for('auth.login'))
 
 
@@ -55,6 +55,7 @@ def logout():
 def sign_up():
     if request.method == 'POST':
         email = request.form.get('email')
+        bsky_email = request.form.get('bsky_email')
         first_name = request.form.get('firstName')
         password1 = request.form.get('password1')
         password2 = request.form.get('password2')
@@ -80,12 +81,14 @@ def sign_up():
             user_id = str(uuid.uuid4())
             password_hash = generate_password_hash(password1, method='pbkdf2:sha256:600000')
 
-            new_user = User(user_id=user_id, email=email, first_name=first_name, password_hash=password_hash)
+            new_user = User(user_id=user_id, email=email, bsky_email=bsky_email,
+                            first_name=first_name, password_hash=password_hash)
 
             # Store user in DynamoDB
             login_table.put_item(Item={
                 'user_id': user_id,
                 'email': email,
+                'bsky_email': bsky_email,
                 'firstName': first_name,
                 'password': password_hash
             })
@@ -93,4 +96,5 @@ def sign_up():
             flash('Account created!', category='success')
             return redirect(url_for('views.home'))
 
-    return render_template('sign_up.html', user=current_user)
+    # return render_template('sign_up.html', user=current_user)
+    return render_template('sign_up.html')
