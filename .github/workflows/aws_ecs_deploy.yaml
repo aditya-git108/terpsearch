@@ -122,6 +122,7 @@ jobs:
       - name: Deploy Celery service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
           cluster: ${{ env.AWS_ECS_CLUSTER_NAME }}
           service: ${{ env.AWS_ECS_SERVICE_NAME_CELERY }}
           task-definition: ${{ steps.task-def.outputs.task-definition }}
@@ -147,6 +148,7 @@ jobs:
       - name: Deploy FastAPI service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
           cluster: ${{ env.AWS_ECS_CLUSTER_NAME }}
           service: ${{ env.AWS_ECS_SERVICE_NAME_FASTAPI }}
           task-definition: ${{ steps.task-def.outputs.task-definition }}
@@ -172,6 +174,7 @@ jobs:
       - name: Deploy Flask service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
           cluster: ${{ env.AWS_ECS_CLUSTER_NAME }}
           service: ${{ env.AWS_ECS_SERVICE_NAME_FLASK }}
           task-definition: ${{ steps.task-def.outputs.task-definition }}
