@@ -1,0 +1,112 @@
+{
+    "taskDefinitionArn": "arn:aws:ecs:us-east-1:314702103122:task-definition/terpsearch-flask-task-def:12",
+    "containerDefinitions": [
+      {
+        "name": "flask-app",
+        "image": "314702103122.dkr.ecr.us-east-1.amazonaws.com/terpsearch:terpsearch-app",
+        "cpu": 0,
+        "portMappings": [
+          {
+            "name": "flask",
+            "containerPort": 5000,
+            "hostPort": 5000,
+            "protocol": "tcp",
+            "appProtocol": "http"
+          }
+        ],
+        "essential": true,
+        "command": [
+          "gunicorn",
+          "app:app",
+          "--workers",
+          "2",
+          "--worker-class",
+          "uvicorn.workers.UvicornWorker",
+          "--bind",
+          "0.0.0.0:5000"
+        ],
+        "environment": [
+          { "name": "AWS_REGION", "value": "us-east-1" },
+          { "name": "DB_MODE", "value": "PROD" },
+          { "name": "PYTHONUNBUFFERED", "value": "1" },
+          { "name": "FASTAPI_URL", "value": "http://terpsearch-fastapi:8010" },
+          { "name": "FLASK_MODE", "value": "PROD" },
+          { "name": "REDIS_URL", "value": "redis://terpsearch-redis:6379/0" }
+        ],
+        "secrets": [
+          {
+            "name": "FERNET_KEY",
+            "valueFrom": "arn:aws:secretsmanager:us-east-1:314702103122:secret:terpsearch/fernet_key"
+          }
+        ],
+        "logConfiguration": {
+          "logDriver": "awslogs",
+          "options": {
+            "awslogs-group": "/ecs/terpsearch-flask-task-def",
+            "mode": "non-blocking",
+            "awslogs-create-group": "true",
+            "max-buffer-size": "25m",
+            "awslogs-region": "us-east-1",
+            "awslogs-stream-prefix": "ecs"
+          }
+        }
+      }
+    ],
+    "family": "terpsearch-flask-task-def",
+    "taskRoleArn": "arn:aws:iam::314702103122:role/ecsTaskExecutionRole",
+    "executionRoleArn": "arn:aws:iam::314702103122:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "revision": 12,
+    "volumes": [],
+    "status": "ACTIVE",
+    "requiresAttributes": [
+        {
+            "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+        },
+        {
+            "name": "ecs.capability.execution-role-awslogs"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.ecr-auth"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.28"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.task-iam-role"
+        },
+        {
+            "name": "ecs.capability.execution-role-ecr-pull"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+        },
+        {
+            "name": "ecs.capability.task-eni"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.29"
+        }
+    ],
+    "placementConstraints": [],
+    "compatibilities": [
+        "EC2",
+        "FARGATE"
+    ],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "3072",
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    },
+    "registeredAt": "2025-04-28T02:23:18.565Z",
+    "registeredBy": "arn:aws:iam::314702103122:root",
+    "enableFaultInjection": false,
+    "tags": []
+}
