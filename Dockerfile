@@ -14,7 +14,8 @@ COPY . /terpsearch_msml
 ENV FLASK_DEBUG=1
 ENV FLASK_APP=app.py
 
-RUN make
+RUN python3 -m build
+RUN pip3 install .
 
 EXPOSE 5000
 EXPOSE 8000
