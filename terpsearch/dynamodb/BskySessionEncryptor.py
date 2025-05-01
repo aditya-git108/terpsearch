@@ -1,4 +1,5 @@
 import os
+import json
 from cryptography.fernet import Fernet
 from terpsearch.constants.DynamoDbConstants import DynamoDbConstants
 
@@ -22,7 +23,9 @@ class BskySessionEncryptor:
             None: If the key is not found or invalid.
         """
         try:
-            key = os.getenv(DynamoDbConstants.FERNET_KEY)
+            secret = os.getenv(DynamoDbConstants.FERNET_KEY)
+            parsed_secret = json.loads(secret)
+            key = parsed_secret[DynamoDbConstants.FERNET_KEY]
             cipher = Fernet(key.encode())
             return cipher
         except AttributeError as e:
