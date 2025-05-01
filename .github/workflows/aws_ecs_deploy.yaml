@@ -61,6 +61,7 @@ env:
   AWS_ECS_SERVICE_NAME_FLASK: terpsearch-flask
   AWS_DEFAULT_REGION: us-east-1
   IMAGE_TAG: ${{ github.sha }}
+  ECR_REGISTRY: 314702103122.dkr.ecr.us-east-1.amazonaws.com
 
 jobs:
 
@@ -91,20 +92,19 @@ jobs:
 
       - name: Build & push Flask image
         run: |
-          docker build -t ${{ steps.login-ecr.outputs.registry }}/terpsearch:flask-${{ github.sha }} -f Dockerfile .
-          docker push ${{ steps.login-ecr.outputs.registry }}/terpsearch:flask-${{ github.sha }}
+          docker build -t $ECR_REGISTRY/terpsearch:flask-${{ github.sha }} -f Dockerfile .
+          docker push $ECR_REGISTRY/terpsearch:flask-${{ github.sha }}
+
 
       - name: Build & push FastAPI image
         run: |
-          docker build -t ${{ steps.login-ecr.outputs.registry }}/terpsearch:fastapi-${{ github.sha }} \
-            -f fastapi_categorizer/Dockerfile .
-          docker push ${{ steps.login-ecr.outputs.registry }}/terpsearch:fastapi-${{ github.sha }}
+          docker build -t $ECR_REGISTRY/terpsearch:fastapi-${{ github.sha }} -f fastapi_categorizer/Dockerfile .
+          docker push $ECR_REGISTRY/terpsearch:fastapi-${{ github.sha }}
 
       - name: Build & push Celery image
         run: |
-          docker build -t ${{ steps.login-ecr.outputs.registry }}/terpsearch:celery-${{ github.sha }} \
-            -f fastapi_categorizer/Dockerfile .
-          docker push ${{ steps.login-ecr.outputs.registry }}/terpsearch:celery-${{ github.sha }}
+          docker build -t $ECR_REGISTRY/terpsearch:celery-${{ github.sha }} -f fastapi_categorizer/Dockerfile .
+          docker push $ECR_REGISTRY/terpsearch:celery-${{ github.sha }}
 
   ### Deploy Celery
   deploy-celery:
@@ -128,7 +128,7 @@ jobs:
         with:
           task-definition: ${{ env.AWS_ECS_TASK_DEF_FILE_CELERY }}
           container-name: ${{ env.AWS_ECS_CONTAINER_NAME_CELERY }}
-          image: ${{ needs.setup.outputs.registry }}/terpsearch:celery-${{ github.sha }}
+          image: ${{ env.ECR_REGISTRY }}/terpsearch:celery-${{ github.sha }}
 
       - name: Deploy Celery service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
@@ -160,7 +160,7 @@ jobs:
         with:
           task-definition: ${{ env.AWS_ECS_TASK_DEF_FILE_FASTAPI }}
           container-name: ${{ env.AWS_ECS_CONTAINER_NAME_FASTAPI }}
-          image: ${{ needs.setup.outputs.registry }}/terpsearch:fastapi-${{ github.sha }}
+          image: ${{ env.ECR_REGISTRY }}/terpsearch:fastapi-${{ github.sha }}
 
       - name: Deploy FastAPI service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
@@ -192,7 +192,7 @@ jobs:
         with:
           task-definition: ${{ env.AWS_ECS_TASK_DEF_FILE_FLASK }}
           container-name: ${{ env.AWS_ECS_CONTAINER_NAME_FLASK }}
-          image: ${{ needs.setup.outputs.registry }}/terpsearch:flask-${{ github.sha }}
+          image: ${{ env.ECR_REGISTRY }}/terpsearch:flask-${{ github.sha }}
 
       - name: Deploy Flask service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
