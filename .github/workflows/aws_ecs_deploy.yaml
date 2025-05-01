@@ -85,6 +85,10 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      - name: Debug registry output
+        run:
+          echo "📦 ECR registry is: ${{ steps.login-ecr.outputs.registry }}"
+
       - name: Build & push Flask image
         run: |
           docker build -t ${{ steps.login-ecr.outputs.registry }}/terpsearch:flask-${{ github.sha }} -f Dockerfile .
