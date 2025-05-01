@@ -78,7 +78,7 @@ class Categorizer:
         ]
     }
 
-    def __init__(self, threshold: float = 0.22):
+    def __init__(self, threshold: float = 0.18):
         print("Loading model...")
         self.model = SentenceTransformer("all-MiniLM-L6-v2")
         print("Model loaded!")
@@ -97,16 +97,18 @@ class Categorizer:
         embedding = self.model.encode(post, convert_to_tensor=True, normalize_embeddings=True)
         cosine_scores = util.cos_sim(embedding, self.category_embeddings)[0]
 
-        matched = [
-            self.clean_labels[i]
-            for i, score in enumerate(cosine_scores)
-            if score > self.threshold
-        ]
+        best_idx = int(cosine_scores.argmax())
+        best_score = float(cosine_scores[best_idx])
+        best_label = self.clean_labels[best_idx]
 
-        if not matched:
-            matched = self._keyword_fallback(text_lower)
+        if best_score >= self.threshold:
+            return [best_label]
 
-        return matched or ["uncategorized"]
+        fallback = self._keyword_fallback(text_lower)
+        if fallback:
+            return fallback
+
+        return [best_label]
 
     def batch_categorize(self, posts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         start_time = time.time()
@@ -119,12 +121,15 @@ class Categorizer:
         cosine_scores = util.cos_sim(embeddings, self.category_embeddings)
 
         for i, row in enumerate(cosine_scores):
-            matched = [
-                self.clean_labels[j] for j, score in enumerate(row) if score > self.threshold
-            ]
-            if not matched:
-                matched = self._keyword_fallback(texts[i].lower())
-            posts[i]['category'] = matched or ['uncategorized']
+            best_idx = int(row.argmax())
+            best_score = float(row[best_idx])
+            best_label = self.clean_labels[best_idx]
+
+            if best_score >= self.threshold:
+                posts[i]['category'] = [best_label]
+            else:
+                fallback = self._keyword_fallback(texts[i].lower())
+                posts[i]['category'] = fallback or [best_label]
 
         print(f'batch_categorize() took {time.time() - start_time:.4f} seconds')
         return posts
@@ -139,7 +144,6 @@ class Categorizer:
         embedding = self.model.encode(text, convert_to_tensor=True, normalize_embeddings=True)
         scores = util.cos_sim(embedding, self.category_embeddings)[0]
         return [{self.clean_labels[i]: float(scores[i])} for i in range(len(self.clean_labels))]
-
 
 
 
