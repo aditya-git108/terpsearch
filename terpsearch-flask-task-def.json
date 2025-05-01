@@ -36,7 +36,7 @@
         "secrets": [
           {
             "name": "FERNET_KEY",
-            "valueFrom": "arn:aws:secretsmanager:us-east-1:314702103122:secret:terpsearch/fernet_key"
+            "valueFrom": "arn:aws:secretsmanager:us-east-1:314702103122:secret:terpsearch/fernetKey"
           }
         ],
         "logConfiguration": {
