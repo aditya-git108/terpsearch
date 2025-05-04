@@ -48,7 +48,7 @@ class Categorizer:
     ]
 
     CATEGORY_DESCRIPTIONS = [
-        "sports and athletics, football, basketball, soccer",
+       "sports and athletics, football, basketball, soccer",
         "politics and government, elections, public policy",
         "technology, AI, software, startups",
         "entertainment, movies, music, celebrities",
@@ -62,17 +62,59 @@ class Categorizer:
     ]
 
     KEYWORDS = {
-        "sports": ["game", "team", "match", "goal", "tournament", "score", "player", "league"],
-        "politics": ["government", "election", "policy", "congress", "bill", "minister", "vote", "democracy"],
-        "tech": ["ai", "software", "device", "machine learning", "app", "coding", "startup", "technology"],
-        "entertainment": ["movie", "tv", "show", "music", "actor", "celebrity", "netflix", "hollywood"],
-        "finance": ["stock", "crypto", "market", "investment", "economy", "bitcoin", "nasdaq", "interest"],
-        "health": ["hospital", "doctor", "covid", "virus", "mental", "fitness", "disease", "wellness"],
-        "education": ["school", "university", "degree", "exam", "teacher", "student", "academic", "learning"],
-        "climate": ["global warming", "environment", "pollution", "emissions", "carbon", "climate", "sustainability"],
-        "travel": ["flight", "vacation", "tourist", "destination", "trip", "journey", "beach", "resort"],
-        "memes": ["meme", "funny", "lol", "joke", "troll", "humor", "dank", "relatable"],
-        "fashion": ["style", "trend", "outfit", "wear", "design", "model", "clothing", "brand"]
+        "sports": [
+            "football", "soccer", "basketball", "baseball", "nba", "nfl", "mlb", "nhl",
+            "goal", "match", "game", "score", "team", "athlete", "tournament", "playoffs",
+            "finals", "draft", "coach", "stadium", "sports"
+        ],
+        "politics": [
+            "election", "vote", "voting", "president", "presidency", "government", "policy", "bill",
+            "congress", "senate", "house", "reform", "democrats", "republicans", "GOP", "liberal",
+            "conservative", "left-wing", "right-wing", "politics", "political", "campaign"
+        ],
+        "tech": [
+            "tech", "AI", "artificial intelligence", "startup", "startups", "software", "hardware",
+            "robotics", "robot", "machine learning", "ML", "gadget", "app", "apps", "dev", "programming",
+            "coding", "engineer", "data science", "big data", "cloud", "cybersecurity", "blockchain", "web3"
+        ],
+        "entertainment": [
+            "movie", "film", "cinema", "tv", "show", "series", "netflix", "hulu", "celebrity",
+            "celeb", "drama", "comedy", "album", "music", "song", "pop", "rap", "hiphop", "hollywood",
+            "streaming", "concert", "trailer", "entertainment"
+        ],
+        "finance": [
+            "finance", "financial", "stock", "stocks", "market", "investment", "investing", "funding",
+            "fund", "economy", "economic", "bank", "banking", "interest rate", "inflation", "bitcoin",
+            "crypto", "ethereum", "btc", "eth", "portfolio", "wall street", "nasdaq", "s&p"
+        ],
+        "health": [
+            "health", "healthy", "doctor", "nurse", "hospital", "clinic", "mental", "mental health",
+            "therapy", "vaccine", "vaccination", "covid", "medicine", "medical", "wellness", "fitness",
+            "exercise", "workout", "nutrition", "diet", "healthcare", "depression", "anxiety"
+        ],
+        "education": [
+            "school", "college", "university", "education", "student", "studying", "study", "exam",
+            "professor", "lecture", "course", "homework", "assignment", "teacher", "class", "academic"
+        ],
+        "climate": [
+            "climate", "climate change", "global warming", "carbon", "carbon footprint", "sustainability",
+            "environment", "environmental", "pollution", "emissions", "green energy", "eco", "renewable",
+            "recycling", "solar", "wind power", "wildfire", "drought", "ice caps"
+        ],
+        "travel": [
+            "travel", "flight", "fly", "vacation", "trip", "journey", "airbnb", "hotel", "resort",
+            "destination", "tour", "tourism", "passport", "airport", "luggage", "cruise", "beach",
+            "backpacking", "road trip", "explore"
+        ],
+        "memes": [
+            "meme", "memes", "funny", "lol", "lmao", "rofl", "😂", "🤣", "joke", "shitpost", "dank",
+            "relatable", "humor", "satire", "irony", "banter", "troll", "cringe", "memeing", "pov"
+        ],
+        "fashion": [
+            "fashion", "clothes", "outfit", "ootd", "style", "trendy", "model", "runway", "wardrobe",
+            "designer", "aesthetic", "lookbook", "shopping", "haute couture", "accessories", "fit check",
+            "vogue", "chic", "streetwear"
+        ]
     }
 
     def __init__(self, threshold: float = 0.18):
