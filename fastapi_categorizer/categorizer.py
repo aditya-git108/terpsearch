@@ -3,6 +3,12 @@ from typing import List, Dict, Any
 import time
 import boto3
 from datetime import datetime
+import json
+
+#threshold automation
+with open("model_config.json") as f:
+    config = json.load(f)
+THRESHOLD = config.get("threshold", 0.18)
 
 # Setup CloudWatch client
 cloudwatch = boto3.client("cloudwatch", region_name="us-east-1")
@@ -117,7 +123,7 @@ class Categorizer:
         ]
     }
 
-    def __init__(self, threshold: float = 0.18):
+    def __init__(self, threshold=THRESHOLD):
         print("Loading model...")
         self.model = SentenceTransformer("all-MiniLM-L6-v2")
         print("Model loaded!")
